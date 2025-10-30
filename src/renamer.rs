@@ -8,6 +8,7 @@ use any_ascii::any_ascii;
 use rayon::prelude::*;
 use regex::Replacer;
 use std::fs;
+use std::process::Command;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -171,6 +172,42 @@ impl Renamer {
             }
 
             // Rename paths in the filesystem
+            if self.config.exec.is_some() {
+                let mut parts = self.config.exec.as_ref().unwrap().split_whitespace();
+                let cmd = parts.next().unwrap();
+                let mut args: Vec<&str> = parts.collect();
+                args.push(operation.source.to_str().unwrap());
+                args.push(operation.target.to_str().unwrap());
+                let mut cmd_str = String::new();
+                cmd_str.push_str(self.config.exec.as_ref().unwrap().as_str());
+                cmd_str.push_str(" ");
+                cmd_str.push_str(args.join(" ").as_str());
+
+                let status = Command::new(cmd)
+                    .args(&args)
+                    .status()
+                    .map_err(|err| Error {
+                        kind: ErrorKind::Rename,
+                        value: Some(format!(
+                            "Failed to execute command '{}': {}",
+                            cmd_str, err
+                        )),
+                    })?;
+
+                if !status.success() {
+                    return Err(Error {
+                        kind: ErrorKind::Rename,
+                        value: Some(format!(
+                            "Command '{}' exited with non-zero status: {}",
+                            cmd_str, status
+                        )),
+                    });
+                }
+
+                printer.print_operation(&operation.source, &operation.target);
+            } else
+
+            // Rename paths in the filesystem
             if let Err(err) = fs::rename(&operation.source, &operation.target) {
                 return Err(Error {
                     kind: ErrorKind::Rename,
@@ -261,6 +298,7 @@ mod test {
                 run_mode: RunMode::Simple(vec![]),
                 replace_mode: ReplaceMode::None,
                 printer: Printer::color(),
+                exec: None,
             }
         }
     }
