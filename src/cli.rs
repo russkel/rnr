@@ -35,6 +35,10 @@ pub struct CommonArgs {
     #[arg(short, long)]
     pub backup: bool,
 
+    /// Run a custom command instead of renaming files.
+    #[arg(long)]
+    pub exec: Option<String>,
+
     /// Do not print any information.
     #[arg(short, long)]
     pub silent: bool,

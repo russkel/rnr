@@ -25,6 +25,7 @@ pub struct Config {
     pub run_mode: RunMode,
     pub replace_mode: ReplaceMode,
     pub printer: Printer,
+    pub exec: Option<String>,
 }
 
 impl Config {
@@ -162,6 +163,7 @@ fn parse_arguments() -> Result<Config> {
         run_mode,
         replace_mode,
         printer,
+        exec: common.exec.clone(),
     })
 }
 
